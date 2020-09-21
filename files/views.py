@@ -9,6 +9,8 @@ from rest_framework import status, permissions
 from django.http import Http404
 from rest_framework.parsers import FileUploadParser
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+
+from django.conf import settings
     
 class Files_APIView(APIView):
     parser_class = (FileUploadParser, )
@@ -28,7 +30,12 @@ class Files_APIView(APIView):
         serializer = FileSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            import pdb; pdb.set_trace()
+            # Open file         
+            open_file = open(settings.BASE_DIR + serializer.data['file'], 'r')
+            # Read line per line
+            for line in open_file.readlines():
+                print(line)
+            open_file.close()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
