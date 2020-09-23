@@ -11,6 +11,9 @@ from rest_framework.parsers import FileUploadParser
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 from django.conf import settings
+import pandas as pd
+from pandas import ExcelWriter
+from rest_pandas import PandasView, PandasCSVRenderer, PandasExcelRenderer
     
 class Files_APIView(APIView):
     parser_class = (FileUploadParser, )
@@ -65,3 +68,34 @@ class Files_APIView_Detail(APIView):
         file.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+class ExportWithPandas(APIView):
+    """
+        Method to create a file using pandas library
+    """
+    def get(self, request, format=None):
+        file = File.objects.all()
+        serializer = FileSerializer(file, many=True)
+        
+        # In this case the folder is created with anteriority
+        writer = pd.ExcelWriter(r'media\export.xlsx')  
+        df = pd.DataFrame(serializer.data)      
+        df.to_excel(writer,  index=False)
+        writer.save()
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class ExportWithRestPandas(PandasView):
+    """
+        Method to export file with django rest pandas
+    """
+    queryset = File.objects.all()
+    serializer_class = FileSerializer
+    renderer_classes = [PandasExcelRenderer]
+
+    def get_pandas_filename(self, request, format):
+        if format in ('xls', 'xlsx'):
+            # Use custom filename and Content-Disposition header
+            return "Data Export"  # Extension will be appended automatically
+        else:
+            # Default filename from URL (no Content-Disposition header)
+            return None
